@@ -1,0 +1,16 @@
+kit:
+  name: PetClinic
+  link: https://github.com/qubell-bazaar/component-petclinic-docker
+  applications:
+    - name: "PetClinic on Docker"
+      manifest: https://raw.github.com/qubell-bazaar/component-petclinic-docker/master/petclinic.yml
+    - name: "WAR on Docker"
+      manifest: https://raw.github.com/qubell-bazaar/component-war-docker/master/war.yml
+    - name: "MySQL Server on Docker"
+      manifest: https://raw.github.com/qubell-bazaar/component-mysql-docker/master/mysql.yml
+  provider:
+    name: Qubell
+    link: http://qubell.com
+  documentation:
+    overview: |
+      This application requires a Docker Service to be configured in your environment.

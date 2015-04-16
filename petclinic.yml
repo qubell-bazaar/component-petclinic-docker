@@ -1,0 +1,146 @@
+application:
+  interfaces:
+    configuration:
+      clusterSize:   bind(cluster#configuration.quantity)
+    app:
+      url:             bind(haproxy#app.url)
+      application-pic: bind(haproxy#app.petclinic-image)
+  configuration:
+    configuration.clusterSize: 1
+  components:
+    haproxy:
+      type: docker.Container
+      interfaces:
+        tomcat:
+          tomcat-container-name: consume-signal(string)
+        app:
+          url:             
+            type: publish-signal(string)
+            name: "PetClinic"
+          stats-url:
+            type: publish-signal(string)
+            name: "Haproxy stats"
+          application-pic:
+            type: publish-signal(map<string, object>)
+            name: ""
+          petclinic-image:
+            type: publish-signal(map<string, object>)
+            name: ""
+      configuration:
+        docker.image: "qubell/haproxy:latest"
+        docker.signals:  
+          app.url:             "http://{$.docker.ports.80.host}:{$.docker.ports.80.port}/"
+          app.stats-url:       "http://{$.docker.ports.1935.host}:{$.docker.ports.1935.port}/"
+          app.application-pic:
+            large: "https://cloud.githubusercontent.com/assets/831307/6492522/151e504c-c269-11e4-8f1b-0c6231410a9f.png"
+            small: "https://cloud.githubusercontent.com/assets/831307/6492522/151e504c-c269-11e4-8f1b-0c6231410a9f.png"
+          app.petclinic-image:
+            large: "https://cloud.githubusercontent.com/assets/831307/6500138/4c9137da-c2bc-11e4-8d38-8ce51f03ad46.png"
+            small: "https://cloud.githubusercontent.com/assets/831307/6500138/4c9137da-c2bc-11e4-8d38-8ce51f03ad46.png"
+            small-height: 70
+        docker.expose:
+          "80": "*"
+          "1935": "*"
+        docker.link:
+          tomcat: "{$..tomcat-container-name}"
+        docker.environment:
+          BACKEND_PORT: "8080"
+    mysql:
+      type: reference.Submodule
+      interfaces:
+        database:
+          database-host:           publish-signal(string)
+          database-port:           publish-signal(int)
+          database-admin-username: publish-signal(string)
+          database-admin-password: publish-signal(string)
+      configuration:
+        __locator.application-id: "MySQL Server on Docker"
+    schema:
+      type: docker.Container
+      interfaces:
+        server:
+          database-host:           consume-signal(string)
+          database-port:           consume-signal(int)
+          database-admin-username: consume-signal(string)
+          database-admin-password: consume-signal(string)
+        mysql:
+          database-host:     publish-signal(string)
+          database-port:     publish-signal(int)
+          database-username: publish-signal(string)
+          database-password: publish-signal(string)
+          application-pic:   publish-signal(map<string,object>)
+      required: [ server ]
+      configuration:
+        docker.image: "tutum/mysql"
+        docker.daemonize: false
+        docker.command:
+        - sh
+        - -xc
+        - |
+           apt-get update && 
+           apt-get install -y curl &&
+           (curl https://dl.dropboxusercontent.com/u/133677/db.sql |
+             mysql -h{$.server.*.database-host[0]} -P{$.server.*.database-port[0]} -u{$.server.*.database-admin-username[0]} -p{$.server.*.database-admin-password[0]}) &&
+           (curl https://raw.githubusercontent.com/qubell-bazaar/component-petclinic/master/sql/petclinic-mysql-schema.sql |
+             mysql -h{$.server.*.database-host[0]} -P{$.server.*.database-port[0]} -upetclinic -ppetclinic petclinic) &&
+           (curl https://raw.githubusercontent.com/qubell-bazaar/component-petclinic/master/sql/petclinic-mysql-dataload.sql |
+             mysql -h{$.server.*.database-host[0]} -P{$.server.*.database-port[0]} -upetclinic -ppetclinic petclinic)
+        docker.signals:
+          mysql.database-host: "{$.server.*.database-host[0]}"
+          mysql.database-port: "{$.server.*.database-port[0]}"
+          mysql.database-username: "petclinic"
+          mysql.database-password: "petclinic"
+          mysql.application-pic:
+            small: "https://cloud.githubusercontent.com/assets/831307/6498103/aa648b52-c29c-11e4-8c9b-44579301c10e.png"
+            large: "https://cloud.githubusercontent.com/assets/831307/6498103/aa648b52-c29c-11e4-8c9b-44579301c10e.png"
+            small-height: 75
+    petclinic:
+      type: reference.Submodule
+      interfaces:
+        configuration:
+          git-url:    configuration(string)
+          git-branch: configuration(string)
+        petclinic:
+          war-url: publish-signal(string)
+      configuration:
+        __locator.application-id: "WAR on Docker"
+        configuration.git-url:    "https://github.com/qubell/starter-java-web.git"
+        configuration.git-branch: "master"
+    cluster:
+      type: composite.Scaler
+      components:
+        tomcat: 
+          type: docker.Container
+          interfaces:
+            database:
+              database-host: consume-signal(string)
+              database-port: consume-signal(int)
+            war:
+              war-url: consume-signal(string)
+            tomcat:
+              tomcat-container-name:
+                type: publish-signal(string)
+                name: Container name
+              application-pic:
+                type: publish-signal(map<string, object>)
+                name: ""
+          required: [ database, war ]
+          configuration:
+            docker.image: "qubell/tomcat:latest"
+            docker.signals:
+              tomcat.tomcat-container-name: "{$.docker.name}"
+              tomcat.application-pic:
+                large: "https://cloud.githubusercontent.com/assets/831307/6492521/151d4c24-c269-11e4-970c-b2e9b468021f.png"
+                small: "https://cloud.githubusercontent.com/assets/831307/6492521/151d4c24-c269-11e4-970c-b2e9b468021f.png"
+            docker.environment:
+              MYSQL_HOST: "{$.database.*.database-host[0]}"
+              MYSQL_PORT: "{$.database.*.database-port[0]} "
+              MYSQL_USERNAME: "petclinic"
+              MYSQL_PASSWORD: "petclinic"
+              WAR_URL: "{$.war.*.war-url[0]}"
+  bindings:
+    - [ haproxy#tomcat, cluster.tomcat ]
+    - [ schema#server, mysql ]
+    - [ cluster.tomcat#database, schema ]
+    - [ cluster.tomcat#war, petclinic ]
+
