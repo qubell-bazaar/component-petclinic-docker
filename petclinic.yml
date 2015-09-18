@@ -117,6 +117,8 @@ application:
           required: [ database ]
           configuration:
             docker.image: "qubell/tomcat:latest"
+            docker.expose:
+              "8080": "*"
             docker.signals:
               tomcat.tomcat-container-name: "{$.docker.name}"
               tomcat.application-pic:
