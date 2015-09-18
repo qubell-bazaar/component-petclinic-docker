@@ -2,11 +2,13 @@ application:
   interfaces:
     configuration:
       clusterSize:   bind(cluster#configuration.quantity)
+      war-url:       bind(cluster.tomcat#war.war-url)
     app:
       url:             bind(haproxy#app.url)
       application-pic: bind(haproxy#app.petclinic-image)
   configuration:
     configuration.clusterSize: 1
+    configuration.war-url:    "http://tonomi-petclinic.s3.amazonaws.com/tree/master/petclinic-1.0.0-SNAPSHOT.war"
   components:
     haproxy:
       type: docker.Container
@@ -94,18 +96,6 @@ application:
             small: "https://cloud.githubusercontent.com/assets/831307/6498103/aa648b52-c29c-11e4-8c9b-44579301c10e.png"
             large: "https://cloud.githubusercontent.com/assets/831307/6498103/aa648b52-c29c-11e4-8c9b-44579301c10e.png"
             small-height: 75
-    petclinic:
-      type: reference.Submodule
-      interfaces:
-        configuration:
-          git-url:    configuration(string)
-          git-branch: configuration(string)
-        petclinic:
-          war-url: publish-signal(string)
-      configuration:
-        __locator.application-id: "WAR on Docker"
-        configuration.git-url:    "https://github.com/qubell/starter-java-web.git"
-        configuration.git-branch: "master"
     cluster:
       type: composite.Scaler
       components:
@@ -116,7 +106,7 @@ application:
               database-host: consume-signal(string)
               database-port: consume-signal(int)
             war:
-              war-url: consume-signal(string)
+              war-url: configuration(string)
             tomcat:
               tomcat-container-name:
                 type: publish-signal(string)
@@ -124,7 +114,7 @@ application:
               application-pic:
                 type: publish-signal(map<string, object>)
                 name: ""
-          required: [ database, war ]
+          required: [ database ]
           configuration:
             docker.image: "qubell/tomcat:latest"
             docker.signals:
@@ -137,10 +127,9 @@ application:
               MYSQL_PORT: "{$.database.*.database-port[0]} "
               MYSQL_USERNAME: "petclinic"
               MYSQL_PASSWORD: "petclinic"
-              WAR_URL: "{$.war.*.war-url[0]}"
+              WAR_URL: "{$.war.war-url}"
   bindings:
     - [ haproxy#tomcat, cluster.tomcat ]
     - [ schema#server, mysql ]
     - [ cluster.tomcat#database, schema ]
-    - [ cluster.tomcat#war, petclinic ]
 
