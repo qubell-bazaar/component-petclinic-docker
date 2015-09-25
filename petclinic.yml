@@ -37,8 +37,8 @@ application:
             large: "https://cloud.githubusercontent.com/assets/831307/6492522/151e504c-c269-11e4-8f1b-0c6231410a9f.png"
             small: "https://cloud.githubusercontent.com/assets/831307/6492522/151e504c-c269-11e4-8f1b-0c6231410a9f.png"
           app.petclinic-image:
-            large: "https://cloud.githubusercontent.com/assets/831307/6500138/4c9137da-c2bc-11e4-8d38-8ce51f03ad46.png"
-            small: "https://cloud.githubusercontent.com/assets/831307/6500138/4c9137da-c2bc-11e4-8d38-8ce51f03ad46.png"
+            large: "https://s3.amazonaws.com/tonomi-petclinic/petclinic.png"
+            small: "https://s3.amazonaws.com/tonomi-petclinic/petclinic.png"
             small-height: 70
         docker.expose:
           "80": "*"
