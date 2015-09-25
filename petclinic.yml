@@ -1,7 +1,9 @@
 application:
   interfaces:
     configuration:
-      clusterSize:   bind(cluster#configuration.quantity)
+      clusterSize:   
+        mapping: bind(cluster#configuration.quantity)
+        name:   "Tomcat Cluster Size"
     app:
       url:             bind(haproxy#app.url)
       application-pic: bind(haproxy#app.petclinic-image)
@@ -64,11 +66,21 @@ application:
           database-admin-username: consume-signal(string)
           database-admin-password: consume-signal(string)
         mysql:
-          database-host:     publish-signal(string)
-          database-port:     publish-signal(int)
-          database-username: publish-signal(string)
-          database-password: publish-signal(string)
-          application-pic:   publish-signal(map<string,object>)
+          database-host:     
+            type: publish-signal(string)
+            name: "Database Host"
+          database-port:     
+            type: publish-signal(int)
+            name: "Database Port"
+          database-username: 
+            type: publish-signal(string)
+            name: "Database User"
+          database-password: 
+            type: publish-signal(string)
+            name: "Database Password"
+          application-pic:   
+            type: publish-signal(map<string,object>)
+            name: ""
       required: [ server ]
       configuration:
         docker.image: "tutum/mysql"
