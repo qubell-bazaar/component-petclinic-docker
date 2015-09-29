@@ -4,7 +4,7 @@ kit:
   applications:
     - name: "PetClinic on Docker"
       manifest: https://raw.github.com/qubell-bazaar/component-petclinic-docker/master/petclinic.yml
-    - name: "WAR on Docker"
+    - name: "Web application builder on Docker"
       manifest: https://raw.github.com/qubell-bazaar/component-war-docker/master/war.yml
     - name: "MySQL Server on Docker"
       manifest: https://raw.github.com/qubell-bazaar/component-mysql-docker/master/mysql.yml

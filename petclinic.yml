@@ -115,7 +115,7 @@ application:
         petclinic:
           war-url: publish-signal(string)
       configuration:
-        __locator.application-id: "WAR on Docker"
+        __locator.application-id: "Web application builder on Docker"
         configuration.git-url:    "https://github.com/qubell/starter-java-web.git"
         configuration.git-branch: "master"
     cluster:
