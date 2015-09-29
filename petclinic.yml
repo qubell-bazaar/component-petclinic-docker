@@ -57,7 +57,7 @@ application:
           database-admin-password: publish-signal(string)
       configuration:
         __locator.application-id: "MySQL Server on Docker"
-    schema:
+    database-initializer:
       type: docker.Container
       interfaces:
         server:
@@ -154,7 +154,7 @@ application:
               WAR_URL: "{$.war.*.war-url[0]}"
   bindings:
     - [ haproxy#tomcat, tomcat-web-farm.tomcat ]
-    - [ schema#server, mysql ]
-    - [ tomcat-web-farm.tomcat#database, schema ]
+    - [ database-initializer#server, mysql ]
+    - [ tomcat-web-farm.tomcat#database, database-initializer ]
     - [ tomcat-web-farm.tomcat#war, petclinic ]
 
