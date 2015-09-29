@@ -2,8 +2,8 @@ application:
   interfaces:
     configuration:
       clusterSize:   
-        mapping: bind(cluster#configuration.quantity)
-        name:   "Tomcat Cluster Size"
+        mapping: bind(tomcat-web-farm#configuration.quantity)
+        name:   "Tomcat Web Farm Size"
     app:
       url:             bind(haproxy#app.url)
       application-pic: bind(haproxy#app.petclinic-image)
@@ -118,7 +118,7 @@ application:
         __locator.application-id: "Web application builder on Docker"
         configuration.git-url:    "https://github.com/qubell/starter-java-web.git"
         configuration.git-branch: "master"
-    cluster:
+    tomcat-web-farm:
       type: composite.Scaler
       components:
         tomcat: 
@@ -153,8 +153,8 @@ application:
               MYSQL_PASSWORD: "petclinic"
               WAR_URL: "{$.war.*.war-url[0]}"
   bindings:
-    - [ haproxy#tomcat, cluster.tomcat ]
+    - [ haproxy#tomcat, tomcat-web-farm.tomcat ]
     - [ schema#server, mysql ]
-    - [ cluster.tomcat#database, schema ]
-    - [ cluster.tomcat#war, petclinic ]
+    - [ tomcat-web-farm.tomcat#database, schema ]
+    - [ tomcat-web-farm.tomcat#war, petclinic ]
 
