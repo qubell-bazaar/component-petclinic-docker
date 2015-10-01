@@ -106,7 +106,7 @@ application:
             small: "https://cloud.githubusercontent.com/assets/831307/6498103/aa648b52-c29c-11e4-8c9b-44579301c10e.png"
             large: "https://cloud.githubusercontent.com/assets/831307/6498103/aa648b52-c29c-11e4-8c9b-44579301c10e.png"
             small-height: 75
-    petclinic:
+    artifact-builder:
       type: reference.Submodule
       interfaces:
         configuration:
@@ -156,5 +156,5 @@ application:
     - [ haproxy#tomcat, tomcat-web-farm.tomcat ]
     - [ database-initializer#server, mysql ]
     - [ tomcat-web-farm.tomcat#database, database-initializer ]
-    - [ tomcat-web-farm.tomcat#war, petclinic ]
+    - [ tomcat-web-farm.tomcat#war, artifact-builder ]
 
