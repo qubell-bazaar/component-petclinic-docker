@@ -106,14 +106,14 @@ application:
             small: "https://cloud.githubusercontent.com/assets/831307/6498103/aa648b52-c29c-11e4-8c9b-44579301c10e.png"
             large: "https://cloud.githubusercontent.com/assets/831307/6498103/aa648b52-c29c-11e4-8c9b-44579301c10e.png"
             small-height: 75
-    petclinic:
+    artifact-builder:
       type: reference.Submodule
       interfaces:
         configuration:
           git-url:    configuration(string)
           git-branch: configuration(string)
-        petclinic:
-          war-url: publish-signal(string)
+        artifact:
+          artifact-url: publish-signal(string)
       configuration:
         __locator.application-id: "Web application builder on Docker"
         configuration.git-url:    "https://github.com/qubell/starter-java-web.git"
@@ -127,8 +127,8 @@ application:
             database:
               database-host: consume-signal(string)
               database-port: consume-signal(int)
-            war:
-              war-url: consume-signal(string)
+            artifact:
+              artifact-url: consume-signal(string)
             tomcat:
               tomcat-container-name:
                 type: publish-signal(string)
@@ -136,7 +136,7 @@ application:
               application-pic:
                 type: publish-signal(map<string, object>)
                 name: ""
-          required: [ database, war ]
+          required: [ database, artifact ]
           configuration:
             docker.image: "qubell/tomcat:latest"
             docker.expose:
@@ -151,10 +151,10 @@ application:
               MYSQL_PORT: "{$.database.*.database-port[0]} "
               MYSQL_USERNAME: "petclinic"
               MYSQL_PASSWORD: "petclinic"
-              WAR_URL: "{$.war.*.war-url[0]}"
+              WAR_URL: "{$.artifact.*.artifact-url[0]}"
   bindings:
     - [ haproxy#tomcat, tomcat-web-farm.tomcat ]
     - [ database-initializer#server, mysql ]
     - [ tomcat-web-farm.tomcat#database, database-initializer ]
-    - [ tomcat-web-farm.tomcat#war, petclinic ]
+    - [ tomcat-web-farm.tomcat#artifact, artifact-builder ]
 
