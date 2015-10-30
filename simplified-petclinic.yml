@@ -1,0 +1,123 @@
+application:
+  interfaces:
+    haproxy:
+      http-url: bind(haproxy#haproxy.http-url)
+      host-port-1935: bind(haproxy#haproxy.host-port-1935)
+    mysql:
+      host-port-3306: bind(mysql#mysql.host-port-3306)
+    configuration:
+      backend_port: bind(haproxy#configuration.backend_port)
+      mysql_pass: bind(mysql#configuration.mysql_pass)
+      mysql_admin_username: bind(mysql#configuration.mysql_admin_username)
+      mysql_admin_password: bind(mysql#configuration.mysql_admin_password)
+      mysql_link_port: bind(tomcat#configuration.mysql_link_port)
+      mysql_username: bind(tomcat#configuration.mysql_username)
+      mysql_password: bind(tomcat#configuration.mysql_password)
+      war_url: bind(tomcat#configuration.war_url)
+  configuration:
+    configuration.backend_port: "8080"
+    configuration.mysql_pass: supers3cretE
+    configuration.mysql_admin_username: admin
+    configuration.mysql_admin_password: supers3cretE
+    configuration.mysql_link_port: "3306"
+    configuration.mysql_username: petclinic
+    configuration.mysql_password: petclinic
+    configuration.war_url: "http://tonomi-petclinic.s3.amazonaws.com/tree/master/petclinic-1.0.0-SNAPSHOT.war"
+  components:
+    haproxy:
+      type: docker.Container
+      configuration:
+        docker.image: "qubell/haproxy:latest"
+        docker.daemonize: true
+        docker.environment:
+          BACKEND_PORT: "{$.configuration.backend_port}"
+        docker.signals:
+          haproxy.http-url: "http://{$.docker.ports.80.host}:{$.docker.ports.80.port}"
+          haproxy.host-port-1935: "{$.docker.ports.1935.host}:{$.docker.ports.1935.port}"
+        docker.expose:
+          "80": "*"
+          "1935": "*"
+        docker.link:
+          tomcat: "{$..tomcat-container-name[0]}"
+      interfaces:
+        haproxy:
+          http-url: publish-signal(string)
+          host-port-1935: publish-signal(string)
+        configuration:
+          backend_port: configuration(string)
+        tomcat:
+          tomcat-container-name: consume-signal(string)
+      required:
+        - tomcat
+    database-initializer:
+      type: docker.Container
+      configuration:
+        docker.image: "tutum/mysql:"
+        docker.daemonize: true
+        docker.command:
+          - sh
+          - "-xc"
+          - "apt-get update && apt-get install -y curl && (curl https://dl.dropboxusercontent.com/u/133677/db.sql |\n              mysql -h$${{MYSQL_PORT_3306_TCP_ADDR}} -P$${{MYSQL_PORT_3306_TCP_PORT}} -u$${{MYSQL_ENV_MYSQL_ADMIN_USERNAME}} -p$${{MYSQL_ENV_MYSQL_ADMIN_PASSWORD}}) && (curl https://raw.githubusercontent.com/qubell-bazaar/component-petclinic/master/sql/petclinic-mysql-schema.sql |\n              mysql -h$${{MYSQL_PORT_3306_TCP_ADDR}} -P$${{MYSQL_PORT_3306_TCP_PORT}} -upetclinic -ppetclinic petclinic) && (curl https://raw.githubusercontent.com/qubell-bazaar/component-petclinic/master/sql/petclinic-mysql-dataload.sql |\n              mysql -h$${{MYSQL_PORT_3306_TCP_ADDR}} -P$${{MYSQL_PORT_3306_TCP_PORT}} -upetclinic -ppetclinic petclinic)"
+        docker.link:
+          mysql: "{$..mysql-container-name[0]}"
+      interfaces:
+        mysql:
+          mysql-container-name: consume-signal(string)
+      required:
+        - mysql
+    mysql:
+      type: docker.Container
+      configuration:
+        docker.image: "tutum/mysql:"
+        docker.daemonize: true
+        docker.environment:
+          MYSQL_PASS: "{$.configuration.mysql_pass}"
+          MYSQL_ADMIN_USERNAME: "{$.configuration.mysql_admin_username}"
+          MYSQL_ADMIN_PASSWORD: "{$.configuration.mysql_admin_password}"
+        docker.signals:
+          mysql.database-host: "{$.docker.ports.3306.host}"
+          mysql.database-port: "{$.docker.ports.3306.port}"
+          mysql.host-port-3306: "{$.docker.ports.3306.host}:{$.docker.ports.3306.port}"
+          mysql.mysql-container-name: "{$.docker.name}"
+        docker.expose:
+          "3306": "*"
+      interfaces:
+        mysql:
+          database-host: publish-signal(string)
+          database-port: publish-signal(int)
+          host-port-3306: publish-signal(string)
+          mysql-container-name: publish-signal(string)
+        configuration:
+          mysql_pass: configuration(string)
+          mysql_admin_username: configuration(string)
+          mysql_admin_password: configuration(string)
+    tomcat:
+      type: docker.Container
+      configuration:
+        docker.image: "qubell/tomcat-links:latest"
+        docker.daemonize: true
+        docker.environment:
+          MYSQL_LINK_PORT: "{$.configuration.mysql_link_port}"
+          MYSQL_USERNAME: "{$.configuration.mysql_username}"
+          MYSQL_PASSWORD: "{$.configuration.mysql_password}"
+          WAR_URL: "{$.configuration.war_url}"
+        docker.signals:
+          tomcat.tomcat-container-name: "{$.docker.name}"
+        docker.link:
+          mysql: "{$..mysql-container-name[0]}"
+      interfaces:
+        tomcat:
+          tomcat-container-name: publish-signal(string)
+        configuration:
+          mysql_link_port: configuration(string)
+          mysql_username: configuration(string)
+          mysql_password: configuration(string)
+          war_url: configuration(string)
+        mysql:
+          mysql-container-name: consume-signal(string)
+      required:
+        - mysql
+  bindings:
+    - [haproxy#tomcat, tomcat]
+    - [database-initializer#mysql, mysql]
+    - [tomcat#mysql, mysql]
