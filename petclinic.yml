@@ -1,6 +1,7 @@
 application:
   interfaces:
     configuration:
+      "*": bind(haproxy#configuration.*, database-initializer#configuration.*)
       clusterSize:   
         mapping: bind(tomcat-web-farm#configuration.quantity)
         name:   "Tomcat Web Farm Size"
@@ -9,12 +10,18 @@ application:
       application-pic: bind(haproxy#app.petclinic-image)
   configuration:
     configuration.clusterSize: 1
+    configuration.haproxy-docker-image-id: "qubell/haproxy:latest"
+    configuration.database-initializer-docker-image-id: "tutum/mysql"
   components:
     haproxy:
       type: docker.Container
       interfaces:
         tomcat:
           tomcat-container-name: consume-signal(string)
+        configuration:
+          haproxy-docker-image-id: 
+            type: configuration(string)
+            name: "Docker Image ID"
         app:
           url:             
             type: publish-signal(string)
@@ -28,8 +35,15 @@ application:
           petclinic-image:
             type: publish-signal(map<string, object>)
             name: ""
+        docker-container:
+          docker-image-id:
+            type: publish-signal(string)
+            name: "Docker Image ID"
+          docker-container-name: 
+            type: publish-signal(string)
+            name: "Docker Container Name"
       configuration:
-        docker.image: "qubell/haproxy:latest"
+        docker.image: "{$.configuration.haproxy-docker-image-id}"
         docker.signals:  
           app.url:             "http://{$.docker.ports.80.host}:{$.docker.ports.80.port}/"
           app.stats-url:       "http://{$.docker.ports.1935.host}:{$.docker.ports.1935.port}/"
@@ -40,6 +54,8 @@ application:
             large: "https://s3.amazonaws.com/tonomi-petclinic/petclinic.png"
             small: "https://s3.amazonaws.com/tonomi-petclinic/petclinic.png"
             small-height: 70
+          docker-container.docker-image-id: "{$.configuration.haproxy-docker-image-id}"
+          docker-container.docker-container-name: "{$.docker.name}"
         docker.expose:
           "80": "*"
           "1935": "*"
@@ -60,6 +76,10 @@ application:
     database-initializer:
       type: docker.Container
       interfaces:
+        configuration:
+          database-initializer-docker-image-id: 
+            type: configuration(string)
+            name: "Docker Image ID"
         server:
           database-host:           consume-signal(string)
           database-port:           consume-signal(int)
@@ -81,9 +101,16 @@ application:
           application-pic:   
             type: publish-signal(map<string,object>)
             name: ""
+        docker-container:
+          docker-image-id:
+            type: publish-signal(string)
+            name: "Docker Image ID"
+          docker-container-name: 
+            type: publish-signal(string)
+            name: "Docker Container Name"
       required: [ server ]
       configuration:
-        docker.image: "tutum/mysql"
+        docker.image: "{$.configuration.database-initializer-docker-image-id}"
         docker.daemonize: false
         docker.command:
         - sh
@@ -106,6 +133,8 @@ application:
             small: "https://cloud.githubusercontent.com/assets/831307/6498103/aa648b52-c29c-11e4-8c9b-44579301c10e.png"
             large: "https://cloud.githubusercontent.com/assets/831307/6498103/aa648b52-c29c-11e4-8c9b-44579301c10e.png"
             small-height: 75
+          docker-container.docker-image-id: "{$.configuration.database-initializer-docker-image-id}"
+          docker-container.docker-container-name: "{$.docker.name}"
     artifact-builder:
       type: reference.Submodule
       interfaces:
@@ -136,6 +165,13 @@ application:
               application-pic:
                 type: publish-signal(map<string, object>)
                 name: ""
+            docker-container:
+              docker-image-id:
+                type: publish-signal(string)
+                name: "Docker Image ID"
+              docker-container-name: 
+                type: publish-signal(string)
+                name: "Docker Container Name"
           required: [ database, artifact ]
           configuration:
             docker.image: "qubell/tomcat:latest"
@@ -146,6 +182,8 @@ application:
               tomcat.application-pic:
                 large: "https://cloud.githubusercontent.com/assets/831307/6492521/151d4c24-c269-11e4-970c-b2e9b468021f.png"
                 small: "https://cloud.githubusercontent.com/assets/831307/6492521/151d4c24-c269-11e4-970c-b2e9b468021f.png"
+              docker-container.docker-image-id: "qubell/tomcat:latest"
+              docker-container.docker-container-name: "{$.docker.name}"
             docker.environment:
               MYSQL_HOST: "{$.database.*.database-host[0]}"
               MYSQL_PORT: "{$.database.*.database-port[0]} "
